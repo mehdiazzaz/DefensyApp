@@ -1,0 +1,18 @@
+{% extends "blog/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="content-section">
+    <form method="post">
+        {% csrf_token %}
+        <label for="exampleFormControlInput1" class="form-label">Type Password : </label>
+        <!-- reminder : password is best_of_times_123 --->
+        <input class="form-control" type="password" name="password">
+        {% if error_message %}
+<p class="text-danger">{{ error_message }}</p>
+{% endif %}
+        <br>
+        <button type="submit" class="btn btn-outline-info">Generate Report</button>
+        
+    </form>
+</div>
+{% endblock content %}
