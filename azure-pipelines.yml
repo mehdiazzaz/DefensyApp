@@ -19,7 +19,6 @@ steps:
   inputs:
     versionSpec: '$(PYTHON_VERSION)'
     architecture: 'x64'
-
 - task: PythonScript@0
   displayName: 'Export project path'
   inputs:
@@ -40,26 +39,33 @@ steps:
     python -m pip install --upgrade pip setuptools wheel
     pip install -r requirements.txt
     pip install unittest-xml-reporting
+    pip install bandit 
+    bandit -r . -ll -s B605
   displayName: 'Install prerequisites'
 
 - script: |
-    pushd '$(projectRoot)'
-    python manage.py test --testrunner xmlrunner.extra.djangotestrunner.XMLTestRunner --no-input
-  displayName: 'Run tests'
+    pip install bandit 
+    bandit -r . -ll -s B605 -f html -o ./results.html
+  displayName: 'Bandit test'
 
-- task: Docker@2
+- task: SonarCloudPrepare@1
   inputs:
-    command: 'build'
-    Dockerfile: '**/Dockerfile'
+    SonarCloud: 'Sonarcloud_pipeline'
+    organization: 'sonarcloud-stagepublic'
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'StagePublic_DevSecOps'
+    cliProjectName: 'DevSecOps'
+    cliSources: '.'
 
-- task: Bash@3
+
+- task: SonarCloudAnalyze@1
+- task: SonarCloudPublish@1
   inputs:
-    targetType: 'inline'
-    script: 'docker run -d -p 8000:8000 DjangoApp'
-
+    pollingTimeoutSec: '300'
 
 - task: PublishTestResults@2
   inputs:
-    testResultsFiles: "**/TEST-*.xml"
+    testResultsFiles: "**/results.html"
     testRunTitle: 'Python $(PYTHON_VERSION)'
   condition: succeededOrFailed()
