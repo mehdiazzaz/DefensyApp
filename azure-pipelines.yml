@@ -46,7 +46,7 @@ steps:
 - script: |
     pip install bandit 
     bandit -r . -ll -s B605 -f html -o ./results.html
-     publish::$(Build.ArtifactStagingDirectory)/bandit-report.html  # Publish the report
+     publish: $(Build.ArtifactStagingDirectory)/results.html  # Publish the report
   displayName: 'Bandit test'
 
 - task: SonarCloudPrepare@1
