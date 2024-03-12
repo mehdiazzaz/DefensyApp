@@ -78,13 +78,6 @@ steps:
   inputs:
     pollingTimeoutSec: '300'
 
-# Publish Dependency Check Report (optional)
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/dependency-check-report.html'
-    ArtifactName: 'dependency-check-report'
-    publishLocation: 'Container'
-
 - task: PublishTestResults@2
   inputs:
     testResultsFiles: "**/results.html"
