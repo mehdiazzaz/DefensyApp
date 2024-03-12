@@ -37,9 +37,13 @@ steps:
 
 - script: |
     pip install safety
-    safety --key b982ef7d-c6d71e5f-7b369f01-66ebef36 --stage cicd scan --policy-file .safety-policy.yml
+    safety check -r requirements.txt --output text > '$(Build.ArtifactStagingDirectory)'/report.txt
   displayName: 'Dependency Check'   
-
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'report'
+    publishLocation: 'Container'
 - script: |
     python -m pip install --upgrade pip setuptools wheel
     pip install -r requirements.txt
