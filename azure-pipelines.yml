@@ -37,7 +37,7 @@ steps:
 
 - script: |
     pip install safety
-    safety --key b982ef7d-c6d71e5f-7b369f01-66ebef36 --stage cicd scan --apply-fixes
+    safety --key b982ef7d-c6d71e5f-7b369f01-66ebef36 --stage cicd scan --policy-file .safety-policy.yml
   displayName: 'Dependency Check'   
 
 - script: |
