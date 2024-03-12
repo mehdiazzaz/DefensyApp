@@ -36,23 +36,32 @@ steps:
       print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
 
 - script: |
+    pip install safety
+    safety --key b982ef7d-c6d71e5f-7b369f01-66ebef36 --stage cicd scan --apply-fixes
+  displayName: 'Dependency Check'   
+
+- script: |
     python -m pip install --upgrade pip setuptools wheel
     pip install -r requirements.txt
+    pip install owasp-dependency-check
     pip install unittest-xml-reporting
     pip install bandit 
     bandit -r . -ll -s B605
   displayName: 'Install prerequisites'
 
 - script: |
-    pip install bandit 
-    bandit -r . -ll -s B605 -f html -o ./results.html
+   pip install bandit 
+    bandit -r . -ll -s B605 -f xml -o ./TEST-Bandit.xml
+    bandit -r . -ll -f html -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
+    bandit -r . -ll -f html -s B605 -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
   displayName: 'Bandit test'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'bandit-report'
-  displayName: 'Bandit artifact'
-
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+    
 - task: SonarCloudPrepare@1
   inputs:
     SonarCloud: 'Sonarcloud_pipeline'
@@ -68,6 +77,13 @@ steps:
 - task: SonarCloudPublish@1
   inputs:
     pollingTimeoutSec: '300'
+
+# Publish Dependency Check Report (optional)
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/dependency-check-report.html'
+    ArtifactName: 'dependency-check-report'
+    publishLocation: 'Container'
 
 - task: PublishTestResults@2
   inputs:
