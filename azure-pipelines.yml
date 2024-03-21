@@ -37,9 +37,6 @@ steps:
 
 - script: |
     python manage.py test
-  displayName: 'Pyunit python'
-
-- script: |
     pip install safety
     safety validate policy_file --path .safety-policy.yml
     safety --key $(SafetyApiKey) --stage cicd scan --policy-file .safety-policy.yml
