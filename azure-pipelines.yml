@@ -34,7 +34,9 @@ steps:
       project_location = path.dirname(path.abspath(manage_py))
       print('Found Django project in', project_location)
       print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
-
+- script: |
+    python manage.py test
+  displayName: 'Python PyUnit'
 - script: |
     python manage.py test
     pip install safety
