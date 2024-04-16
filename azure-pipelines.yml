@@ -35,10 +35,9 @@ steps:
       print('Found Django project in', project_location)
       print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
 - script: |
-    python manage.py test
-  displayName: 'Python PyUnit'
+    pre-commit run --all-files
+  displayName: 'Pre-commit hooks'
 - script: |
-    python manage.py test
     pip install safety
     safety validate policy_file --path .safety-policy.yml
     safety --key $(SafetyApiKey) --stage cicd scan --policy-file .safety-policy.yml
