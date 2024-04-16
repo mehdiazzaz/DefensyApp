@@ -54,12 +54,12 @@ steps:
     pip install -r requirements.txt
     pip install owasp-dependency-check
     pip install unittest-xml-reporting
-    pip install bandit 
+    pip install bandit
     bandit -r . -ll -s B605
   displayName: 'Install prerequisites'
 
 - script: |
-   pip install bandit 
+   pip install bandit
     bandit -r . -ll -s B605 -f xml -o ./TEST-Bandit.xml
     bandit -r . -ll -f html -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
     bandit -r . -ll -f html -s B605 -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
@@ -70,7 +70,7 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'drop'
     publishLocation: 'Container'
-    
+
 - task: SonarCloudPrepare@1
   inputs:
     SonarCloud: 'Sonarcloud_pipeline'

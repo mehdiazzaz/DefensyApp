@@ -35,4 +35,3 @@ security-updates:
   dependency-vulnerabilities:
     auto-security-updates-limit:
       - patch
-
