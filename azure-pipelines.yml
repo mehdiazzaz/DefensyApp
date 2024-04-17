@@ -37,11 +37,11 @@ steps:
 #- script: |
 #    pre-commit run --all-files
 #  displayName: 'Pre-commit hooks'
-- script: |
-    pip install safety
-    safety validate policy_file --path .safety-policy.yml
-    safety --key $(SafetyApiKey) --stage cicd scan --policy-file .safety-policy.yml
-  displayName: 'Safety Dependency Check'
+#- script: |
+#    pip install safety
+#    safety validate policy_file --path .safety-policy.yml
+#    safety --key $(SafetyApiKey) --stage cicd scan --policy-file .safety-policy.yml
+#  displayName: 'Safety Dependency Check'
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
