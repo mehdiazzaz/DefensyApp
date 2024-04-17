@@ -20,7 +20,7 @@ report:
 
 fail-scan-with-exit-code:
   dependency-vulnerabilities:
-    enabled: false
+    enabled: true
     fail-on-any-of:
       cvss-severity:
         - critical
