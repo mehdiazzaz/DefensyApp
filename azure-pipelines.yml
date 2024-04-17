@@ -85,6 +85,7 @@ steps:
   inputs:
     pollingTimeoutSec: '300'
 - script: |
+    pip install django
     python manage.py test
   displayName: 'PyUnit'
 - task: PublishTestResults@2
