@@ -84,7 +84,9 @@ steps:
 - task: SonarCloudPublish@1
   inputs:
     pollingTimeoutSec: '300'
-
+- script: |
+    python manage.py test
+  displayName: 'PyUnit'
 - task: PublishTestResults@2
   inputs:
     testResultsFiles: "**/results.html"
