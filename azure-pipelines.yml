@@ -37,6 +37,10 @@ steps:
 #- script: |
 #    pre-commit run --all-files
 #  displayName: 'Pre-commit hooks'
+- task: WhiteSource@21
+  inputs:
+    cwd: '$(System.DefaultWorkingDirectory)'
+    projectName: 'DefensyApp'
 - script: |
     pip install safety
     safety validate policy_file --path .safety-policy.yml
