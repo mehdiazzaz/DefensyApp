@@ -92,6 +92,12 @@ steps:
     pip install django
     python manage.py test
   displayName: 'PyUnit'
+- task: SSH@0
+  inputs:
+    sshEndpoint: 'ssh'
+    runOptions: 'commands'
+    commands: 'sudo docker run -d -p 8080:8080 defensylab_app'
+    readyTimeout: '20000'
 - task: PublishTestResults@2
   inputs:
     testResultsFiles: "**/results.html"
