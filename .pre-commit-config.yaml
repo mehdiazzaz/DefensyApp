@@ -7,7 +7,7 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/hmrc/security-git-hooks
-    rev: release/1.11.0
+    rev: v1.0.0-beta9
     hooks:
       - id: secrets_filecontent
         name: Checking staged files for sensitive content
@@ -27,7 +27,7 @@ repos:
       - id: python-safety-dependencies-check
         name: Safety Check
         entry: sh
-        args: ["-c","chcp 65001; set PYTHONIOENCODING=utf-8; safety scan --policy-file .safety-policy.yml;"]
+        args: ["-c","chcp 65001; set PYTHONIOENCODING=utf-8; safety scan;"]
         language: system
         encoding: UTF-8
         verbose: true
@@ -38,9 +38,5 @@ repos:
         language: system
         encoding: UTF-8
         verbose: true
-      - id: return-policy
-        name: return policy file
-        entry: sh
-        args: ["-c","mv .safety-policy.yml.bak .safety-policy.yml"]
-        language: system
-fail_fast: false
+
+#fail_fast: false
