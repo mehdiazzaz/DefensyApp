@@ -199,7 +199,7 @@ stages:
         deploy:
           steps:
           - script: 
-             docker pull baaakkaa/defensylab:tagname ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest; 
+             docker pull baaakkaa/defensylab ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest; 
   #  - task: SSH@0
     #  displayName: Kill_Containers
     #  inputs:
