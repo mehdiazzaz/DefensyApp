@@ -191,16 +191,14 @@ stages:
       vmImage: 'Ubuntu-latest'
     # creates an environment if it doesn't exist
     environment: 
-      name: 'Defensy_app'
+      name: 'Deployement'
       resourceName: Dlab-Intern8
       resourceType: virtualMachine
     strategy:
       runOnce:
         deploy:
           steps:
-          - script: sudo docker login  -u baaakkaa --password $(Docker_token)
-                    docker pull baaakkaa/defensylab:latest
-                    docker run -d -p 8080:8080 baaakkaa/defensylab:latest 
+          - script:  docker pull baaakkaa/defensylab:latest; docker run -d -p 8080:8080 baaakkaa/defensylab:latest:latest; 
   #  - task: SSH@0
     #  displayName: Kill_Containers
     #  inputs:
