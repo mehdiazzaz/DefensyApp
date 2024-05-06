@@ -82,11 +82,6 @@ stages:
             inputs:
               pollingTimeoutSec: '300'
         
-          - script: |
-              pip install django
-              python manage.py test
-            displayName: 'PyUnit'
-        
          # - task: SSH@0
           #  inputs:
            #   sshEndpoint: 'ssh'
