@@ -182,9 +182,9 @@ stages:
           targetType: 'inline'
           script: |
            sudo docker login  -u baaakkaa --password $(Docker_token);
-           sudo docker build -t baaakkaa/defensylabb:latest . ;
-           sudo docker tag baaakkaa/defensylabb:latest baaakkaa/defensylabb:latest;
-           sudo docker push baaakkaa/defensylabb:latest;
+           sudo docker build -t baaakkaa/defensylab:latest . ;
+           sudo docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
+           sudo docker push baaakkaa/defensylab:latest;
   - deployment: DeployWeb
     displayName: deploy Web App
     pool:
@@ -198,7 +198,12 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script:  docker pull baaakkaa/defensylabb:latest; docker run -d -p 8080:8080 baaakkaa/defensylabb:latest:latest; 
+          - script: 
+             sudo docker login  -u baaakkaa --password $(Docker_token);
+             sudo docker build -t baaakkaa/defensylab:latest . ;
+             sudo docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
+             docker pull baaakkaa/defensylab:latest;
+             docker run -d -p 8080:8080 baaakkaa/defensylab:latest:latest; 
   #  - task: SSH@0
     #  displayName: Kill_Containers
     #  inputs:
