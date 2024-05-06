@@ -150,7 +150,7 @@ stages:
           true
     - task: PublishBuildArtifacts@1
       inputs:
-          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          PathtoPublish: '$(Pipeline.Workspace)'
           ArtifactName: 'Release'
           publishLocation: 'Container'
       condition: always()
