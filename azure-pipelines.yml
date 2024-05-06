@@ -76,12 +76,8 @@ stages:
               configMode: 'manual'
               cliProjectKey: 'StagePublic_DevSecOps'
               cliProjectName: 'DevSecOps'
-              cliSources: '.'
-      - job: SonarCloudAnalyse     
-        steps:
+              cliSources: '.'  
           - task: SonarCloudAnalyze@1
-      - job: SonarCloudPublish     
-        steps:
           - task: SonarCloudPublish@1
             inputs:
               pollingTimeoutSec: '300'
