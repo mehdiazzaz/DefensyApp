@@ -198,9 +198,9 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script: sudo docker login  -u baaakkaa --password $(Docker_token);
-                    docker push baaakkaa/defensylab:tagname;
-                    docker run -d -p 8080:8080 baaakkaa/defensylab:latest .; 
+          - script: sudo docker login  -u baaakkaa --password $(Docker_token)
+                    docker pull baaakkaa/defensylab:latest
+                    docker run -d -p 8080:8080 baaakkaa/defensylab:latest 
   #  - task: SSH@0
     #  displayName: Kill_Containers
     #  inputs:
