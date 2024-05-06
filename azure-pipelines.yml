@@ -44,7 +44,7 @@ stages:
 
   - stage: Test 
     pool:
-      vmImage: ubuntu-lastest
+       vmImage: ubuntu-latest
     jobs: 
       - job: Mend_Bolt_Dependency_Check
         steps:
