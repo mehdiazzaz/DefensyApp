@@ -181,7 +181,7 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-           sudo docker login  -u baaakkaa --password $(Docker_token);
+           sudo docker login  -u baaakkaa --password $(Docker_token);docker pull baaakkaa/defensylab:tagname;
            sudo docker build -t baaakkaa/defensylab:latest . ;
            sudo docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
            sudo docker push baaakkaa/defensylab:latest;
@@ -199,7 +199,7 @@ stages:
         deploy:
           steps:
           - script: 
-             docker pull baaakkaa/defensylab:latest; docker run -d -p 8080:8080 baaakkaa/defensylab:latest; 
+             docker pull baaakkaa/defensylab:tagname ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest; 
   #  - task: SSH@0
     #  displayName: Kill_Containers
     #  inputs:
