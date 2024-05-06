@@ -191,7 +191,7 @@ stages:
       vmImage: 'Ubuntu-latest'
     # creates an environment if it doesn't exist
     environment: 
-      name: 'Deployement'
+      name: 'Defensy_app'
       resourceName: Dlab-Intern8
       resourceType: virtualMachine
     strategy:
