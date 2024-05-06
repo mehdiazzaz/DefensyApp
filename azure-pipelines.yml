@@ -77,20 +77,74 @@ stages:
               cliProjectKey: 'StagePublic_DevSecOps'
               cliProjectName: 'DevSecOps'
               cliSources: '.'  
+      - job: SonarCloudAnalyse     
+        steps:
           - task: SonarCloudAnalyze@1
+      - job: SonarCloudPublish     
+        steps:
           - task: SonarCloudPublish@1
             inputs:
               pollingTimeoutSec: '300'
-        
-         # - task: SSH@0
-          #  inputs:
-           #   sshEndpoint: 'ssh'
-            #  runOptions: 'commands'
-             # commands: 'sudo docker run -d -p 8080:8080 defensylab_app'
-             # readyTimeout: '20000'
-        
-          - task: PublishTestResults@2
+
+  - stage: Pre_Production
+    jobs:
+      - job: OWASP_ZAP_Scan_Scan
+        steps:
+          - task: Bash@3
+            displayName: remove_useless_files
             inputs:
-              testResultsFiles: "**/results.html"
-              testRunTitle: 'Python $(PYTHON_VERSION)'
-            condition: succeededOrFailed()
+              targetType: 'inline'
+              script: |
+                rm -rf .git;
+                rm .pre-commit-config.yaml;
+                rm .safety-policy.yml;
+                rm azure-pipelines.yml;
+          - task: Bash@3
+            displayName: build_and_run_app
+            inputs:
+              targetType: 'inline'
+              script: |
+                docker build -t defensyapp:latest . ;
+                docker run  -d --network host -p 8080:8080 defensyapp:latest;
+          - task: Bash@3
+            displayName: Run_OWASP_ZAP
+            inputs:
+              targetType: 'inline'
+              script: |
+                chmod -R 777 ./
+                docker run --network host --rm \
+                  -v $(pwd):/zap/wrk/:rw \
+                  -t softwaresecurityproject/zap-stable \
+                  zap-full-scan.py \
+                  -t http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1):8080/ \
+                  -g gen.conf \
+                  -x '$(Build.ArtifactStagingDirectory)'/OWASP-ZAP-Report.xml \
+                  -r '$(Build.ArtifactStagingDirectory)'/scan-report.html
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'Release'
+              publishLocation: 'Container'
+            condition: always()
+
+  - stage: Production
+    jobs:
+      - job: Publish_Docker_Image 
+        steps:
+          - task: Bash@3
+            displayName: delete_useless_files
+            inputs:
+              targetType: 'inline'
+              script: |
+                rm -rf .git;
+                rm .pre-commit-config.yaml;
+                rm .safety-policy.yml;
+                rm azure-pipelines.yml;
+          - task: Bash@3
+            displayName: build_and_run_app
+            inputs:
+              targetType: 'inline'
+              script: |
+                docker login  -u baaakkaa --password $(Docker_token)
+                docker build -t baaakkaa/defesylab:latest . ;
+                docker tag baaakkaa/defesylab:latest baaakkaa/defesylab:
