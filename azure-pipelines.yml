@@ -4,102 +4,98 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-- master
-
+  - master
 pool:
   vmImage: ubuntu-latest
-strategy:
-  matrix:
-    Python312:
-      PYTHON_VERSION: '3.12'
-  maxParallel: 2
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(PYTHON_VERSION)'
-    architecture: 'x64'
-- task: PythonScript@0
-  displayName: 'Export project path'
-  inputs:
-    scriptSource: 'inline'
-    script: |
-      """Search all subdirectories for `manage.py`."""
-      from glob import iglob
-      from os import path
-      # Python >= 3.5
-      manage_py = next(iglob(path.join('**', 'manage.py'), recursive=True), None)
-      if not manage_py:
-          raise SystemExit('Could not find a Django project')
-      project_location = path.dirname(path.abspath(manage_py))
-      print('Found Django project in', project_location)
-      print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
-#- script: |
-#    pre-commit run --all-files
-#  displayName: 'Pre-commit hooks'
-- task: WhiteSource@21
-  inputs:
-    cwd: '$(System.DefaultWorkingDirectory)'
-    projectName: 'DefensyApp'
-- script: |
-    pip install safety
-    safety validate policy_file --path .safety-policy.yml
-    safety --key $(SAFETY_API_KEY) --stage cicd scan --policy-file .safety-policy.yml
-  displayName: 'Safety Dependency Check'
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'report'
-    publishLocation: 'Container'
-- script: |
-    python -m pip install --upgrade pip setuptools wheel
-    pip install -r requirements.txt
-    pip install owasp-dependency-check
-    pip install unittest-xml-reporting
-    pip install bandit
-    bandit -r . -ll -s B605
-  displayName: 'Install prerequisites'
+stages:
+  - stage: Build_Project
+    jobs:
+      - job: run_build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              architecture: 'x64'
 
-- script: |
-   pip install bandit
-    bandit -r . -ll -s B605 -f xml -o ./TEST-Bandit.xml
-    bandit -r . -ll -f html -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
-    bandit -r . -ll -f html -s B605 -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
-  displayName: 'Bandit test'
+          - task: PythonScript@0
+            displayName: 'Export project path'
+            inputs:
+              scriptSource: 'inline'
+              script: |
+                """Search all subdirectories for `manage.py`."""
+                from glob import iglob
+                from os import path
+                # Python >= 3.5
+                manage_py = next(iglob(path.join('**', 'manage.py'), recursive=True), None)
+                if not manage_py:
+                    raise SystemExit('Could not find a Django project')
+                project_location = path.dirname(path.abspath(manage_py))
+                print('Found Django project in', project_location)
+                print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+          - script: |
+              python -m pip install --upgrade pip setuptools wheel
+              pip install -r requirements.txt
+              pip install unittest-xml-reporting
+            displayName: 'Install prerequisites'
 
-- task: SonarCloudPrepare@1
-  inputs:
-    SonarCloud: 'Sonarcloud_pipeline'
-    organization: 'sonarcloud-stagepublic'
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: 'StagePublic_DevSecOps'
-    cliProjectName: 'DevSecOps'
-    cliSources: '.'
-
-
-- task: SonarCloudAnalyze@1
-- task: SonarCloudPublish@1
-  inputs:
-    pollingTimeoutSec: '300'
-- script: |
-    pip install django
-    python manage.py test
-  displayName: 'PyUnit'
-- task: SSH@0
-  inputs:
-    sshEndpoint: 'ssh'
-    runOptions: 'commands'
-    commands: 'sudo docker run -d -p 8080:8080 defensylab_app'
-    readyTimeout: '20000'
-- task: PublishTestResults@2
-  inputs:
-    testResultsFiles: "**/results.html"
-    testRunTitle: 'Python $(PYTHON_VERSION)'
-  condition: succeededOrFailed()
+  - stage: Test 
+    pool:
+      vmImage: ubuntu-lastest
+    jobs: 
+      - job: Mend_Bolt_Dependency_Check
+        steps:
+          - task: WhiteSource@21
+            inputs:
+              cwd: '$(System.DefaultWorkingDirectory)'
+              projectName: 'DefensyApp'
+              
+      - job: Bandit_Check
+        steps:
+          - script: |
+              pip install bandit 
+              bandit -r . -ll -s B605 -f xml -o ./TEST-Bandit.xml
+              bandit -r . -ll -f html -s B605 -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
+            displayName: 'Bandit test'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/TEST-Bandit.html'
+              ArtifactName: 'Test_results'
+              publishLocation: 'Container'
+        
+          - task: SonarCloudPrepare@1
+            inputs:
+              SonarCloud: 'Sonarcloud_pipeline'
+              organization: 'sonarcloud-stagepublic'
+              scannerMode: 'CLI'
+              configMode: 'manual'
+              cliProjectKey: 'StagePublic_DevSecOps'
+              cliProjectName: 'DevSecOps'
+              cliSources: '.'
+        
+          - task: SonarCloudAnalyze@1
+        
+          - task: SonarCloudPublish@1
+            inputs:
+              pollingTimeoutSec: '300'
+        
+          - script: |
+              pip install django
+              python manage.py test
+            displayName: 'PyUnit'
+        
+         # - task: SSH@0
+          #  inputs:
+           #   sshEndpoint: 'ssh'
+            #  runOptions: 'commands'
+             # commands: 'sudo docker run -d -p 8080:8080 defensylab_app'
+             # readyTimeout: '20000'
+        
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFiles: "**/results.html"
+              testRunTitle: 'Python $(PYTHON_VERSION)'
+            condition: succeededOrFailed()
