@@ -4,143 +4,208 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
 
 trigger:
-  - master
+- master
 pool:
-  vmImage: ubuntu-latest
+    vmImage: ubuntu-latest
 
 stages:
-  - stage: Build_Project
-    jobs:
-      - job: run_build
-        pool:
-          vmImage: ubuntu-latest
-        steps:
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '$(PYTHON_VERSION)'
-              architecture: 'x64'
+- stage: Build_Project
 
-          - task: PythonScript@0
-            displayName: 'Export project path'
-            inputs:
-              scriptSource: 'inline'
-              script: |
-                """Search all subdirectories for `manage.py`."""
-                from glob import iglob
-                from os import path
-                # Python >= 3.5
-                manage_py = next(iglob(path.join('**', 'manage.py'), recursive=True), None)
-                if not manage_py:
-                    raise SystemExit('Could not find a Django project')
-                project_location = path.dirname(path.abspath(manage_py))
-                print('Found Django project in', project_location)
-                print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
+  jobs:
 
-          - script: |
-              python -m pip install --upgrade pip setuptools wheel
-              pip install -r requirements.txt
-              pip install unittest-xml-reporting
-            displayName: 'Install prerequisites'
+    - job: run_build
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '$(PYTHON_VERSION)'
+          architecture: 'x64'
 
-  - stage: Test 
+      - task: PythonScript@0
+        displayName: 'Export project path'
+        inputs:
+          scriptSource: 'inline'
+          script: |
+            """Search all subdirectories for `manage.py`."""
+            from glob import iglob
+            from os import path
+            # Python >= 3.5
+            manage_py = next(iglob(path.join('**', 'manage.py'), recursive=True), None)
+            if not manage_py:
+                raise SystemExit('Could not find a Django project')
+            project_location = path.dirname(path.abspath(manage_py))
+            print('Found Django project in', project_location)
+            print('##vso[task.setvariable variable=projectRoot]{}'.format(project_location))
+      - script: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+          pip install unittest-xml-reporting
+        displayName: 'Install prerequisites'
+- stage: Test
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+    - job: Mend_Bolt_Dependency_Check
+      steps:
+      - task: WhiteSource@21
+        inputs:
+          cwd: '$(System.DefaultWorkingDirectory)'
+          projectName: 'DefensyApp'
+    - job: Bandit_Check
+      steps:
+      - script: |
+          pip install bandit 
+          bandit -r . -ll -s B605 -f xml -o ./TEST-Bandit.xml
+          bandit -r . -ll -f html -s B605 -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
+        displayName: 'Bandit test'
+      - task: PublishBuildArtifacts@1
+        inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)/TEST-Bandit.html'
+            ArtifactName: 'Test_results'
+            publishLocation: 'Container'
+    - job: SonarCloudPrepare          
+      steps:
+        - task: SonarCloudPrepare@1
+          inputs:
+            SonarCloud: 'Sonarcloud_pipeline'
+            organization: 'sonarcloud-stagepublic'
+            scannerMode: 'CLI'
+            configMode: 'manual'
+            cliProjectKey: 'StagePublic_DevSecOps'
+            cliProjectName: 'DevSecOps'
+            cliSources: '.'
+        - task: SonarCloudAnalyze@1
+        - task: SonarCloudPublish@1
+          inputs:
+            pollingTimeoutSec: '300'
+
+- stage: Pre_Production
+  jobs:
+  #- job : publish_image_test
+    #steps:
+#    - task: Bash@3
+    #  displayName: delete_useless_files
+   #   inputs:
+     #   targetType: 'inline'
+      #  script: |
+       #   rm -rf .git;
+        #  rm .pre-commit-config.yaml;
+         # rm .safety-policy.yml;
+          #rm azure-pipelines.yml;
+   # - task: Bash@3
+    #  displayName: build_and_run_app
+     # inputs:
+      #  targetType: 'inline'
+       # script: |
+        #  docker login  -u tazarkour --password $(Docker_token)
+         # docker build -t tazarkour/defensylabwebapp:test . ;
+          #docker push tazarkour/defensylabwebapp:test;
+ # - deployment: DeployWeb
+ #   displayName: deploy Web App
+ #   pool:
+ #     vmImage: 'Ubuntu-latest'
+  #  environment: 
+  #    name: 'Pre-Production Deployement'
+   #   resourceName: Dlab-Intern8
+    #  resourceType: virtualMachine
+    #strategy:
+     # runOnce:
+      #  deploy:
+       #   steps:
+        #  - script: docker pull tazarkour/defensylabwebapp:test; docker run -d -p 8080:8080 tazarkour/defensylabwebapp:test; 
+  - job: OWASP_ZAP_Scan_Scan
+    steps : 
+    - task: Bash@3
+      displayName: remove_useless_files
+      inputs:
+        targetType: 'inline'
+        script: |
+          rm -rf .git;
+          rm .pre-commit-config.yaml;
+          rm .safety-policy.yml;
+          rm azure-pipelines.yml;
+    - task: Bash@3
+      displayName: build_and_run_app
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker build -t defensyapp:latest . ;
+          docker run  -d --network host -p 8080:8080 defensyapp:latest;
+    - task: Bash@3
+      displayName: Run_OWASP_ZAP
+      inputs:
+        targetType: 'inline'
+        script: |
+          chmod -R 777 ./
+          docker run --network host --rm \
+            -v $(pwd):/zap/wrk/:rw \
+            -t softwaresecurityproject/zap-stable \
+            zap-full-scan.py \
+            -t http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1):8080/ \
+            -g gen.conf \
+            -x OWASP-ZAP-Report.xml \
+            -r scan-report.html
+          
+          true
+    - task: PublishBuildArtifacts@1
+      inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          ArtifactName: 'Release'
+          publishLocation: 'Container'
+      condition: always()
+  #  - task: SSH@0
+ #     displayName: Kill_Containers
+  #    inputs:
+   #     sshEndpoint: 'Connection_SSH_Deployement_Manager'
+  #      runOptions: 'commands'
+   #     commands: 'docker stop $(docker ps -a -q --filter ancestor=tazarkour/defensylabwebapp:test)'
+   #     readyTimeout: '20000'
+   #   condition: always()
+
+- stage: Production
+  jobs:
+  - job: Publish_Docker_Image 
+    steps:
+      - task: Bash@3
+        displayName: delete_useless_files
+        inputs:
+          targetType: 'inline'
+          script: |
+            rm -rf .git;
+            rm .pre-commit-config.yaml;
+            rm .safety-policy.yml;
+            rm azure-pipelines.yml;
+      - task: Bash@3
+        displayName: build_and_run_app
+        inputs:
+          targetType: 'inline'
+          script: |
+            docker login  -u baaakkaa --password $(Docker_token)
+            docker build -t baaakkaa/defensylab:latest . ;
+            docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
+            docker push baaakkaa/defensylab:latest;
+  - deployment: DeployWeb
+    displayName: deploy Web App
     pool:
-      vmImage: ubuntu-latest
-    jobs: 
-      - job: Mend_Bolt_Dependency_Check
-        steps:
-          - task: WhiteSource@21
-            inputs:
-              cwd: '$(System.DefaultWorkingDirectory)'
-              projectName: 'DefensyApp'
-              
-      - job: Bandit_Check
-        steps:
-          - script: |
-              pip install bandit 
-              bandit -r . -ll -s B605 -f xml -o ./TEST-Bandit.xml
-              bandit -r . -ll -f html -s B605 -o '$(Build.ArtifactStagingDirectory)'/TEST-Bandit.html
-            displayName: 'Bandit test'
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: '$(Build.ArtifactStagingDirectory)/TEST-Bandit.html'
-              ArtifactName: 'Test_results'
-              publishLocation: 'Container'
-        
-      - job: SonarCloudPrepare          
-        steps:
-          - task: SonarCloudPrepare@1
-            inputs:
-              SonarCloud: 'Sonarcloud_pipeline'
-              organization: 'sonarcloud-stagepublic'
-              scannerMode: 'CLI'
-              configMode: 'manual'
-              cliProjectKey: 'StagePublic_DevSecOps'
-              cliProjectName: 'DevSecOps'
-              cliSources: '.'  
-          - task: SonarCloudAnalyze@1
-          - task: SonarCloudPublish@1
-            inputs:
-              pollingTimeoutSec: '300'
-
-  - stage: Pre_Production
-    jobs:
-      - job: OWASP_ZAP_Scan_Scan
-        steps:
-          - task: Bash@3
-            displayName: remove_useless_files
-            inputs:
-              targetType: 'inline'
-              script: |
-                rm -rf .git;
-                rm .pre-commit-config.yaml;
-                rm .safety-policy.yml;
-                rm azure-pipelines.yml;
-          - task: Bash@3
-            displayName: build_and_run_app
-            inputs:
-              targetType: 'inline'
-              script: |
-                docker build -t defensyapp:latest . ;
-                docker run  -d --network host -p 8080:8080 defensyapp:latest;
-          - task: Bash@3
-            displayName: Run_OWASP_ZAP
-            inputs:
-              targetType: 'inline'
-              script: |
-                chmod -R 777 ./
-                docker run --network host --rm \
-                  -v $(pwd):/zap/wrk/:rw \
-                  -t softwaresecurityproject/zap-stable \
-                  zap-full-scan.py \
-                  -t http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1):8080/ \
-                  -g gen.conf \
-                  -x '$(Build.ArtifactStagingDirectory)'/OWASP-ZAP-Report.xml \
-                  -r '$(Build.ArtifactStagingDirectory)'/scan-report.html
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-              ArtifactName: 'Release'
-              publishLocation: 'Container'
-            condition: always()
-
-  - stage: Production
-    jobs:
-      - job: Publish_Docker_Image 
-        steps:
-          - task: Bash@3
-            displayName: delete_useless_files
-            inputs:
-              targetType: 'inline'
-              script: |
-                rm -rf .git;
-                rm .pre-commit-config.yaml;
-                rm .safety-policy.yml;
-                rm azure-pipelines.yml;
-          - task: Bash@3
-            displayName: build_and_run_app
-            inputs:
-              targetType: 'inline'
-              script: |
-                docker login  -u baaakkaa --password $(Docker_token)
-                docker build -t baaakkaa/defesylab:latest . ;
-                docker tag baaakkaa/defesylab:latest baaakkaa/defesylab:
+      vmImage: 'Ubuntu-latest'
+    # creates an environment if it doesn't exist
+    environment: 
+      name: 'Deployement'
+      resourceName: Dlab-Intern8
+      resourceType: virtualMachine
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: docker pull baaakkaa/defensylab:latest; docker run -d -p 8080:8080 baaakkaa/defensylab:latest; 
+  #  - task: SSH@0
+    #  displayName: Kill_Containers
+    #  inputs:
+      #  sshEndpoint: 'Connection_SSH_Deployement_Manager'
+      #  runOptions: 'commands'
+       # commands: 'docker stop $(docker ps -q --filter ancestor=defensylab_app)'
+       # readyTimeout: '20000'
+      #condition: always()
+      
+  
