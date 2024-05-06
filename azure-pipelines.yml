@@ -44,7 +44,7 @@ stages:
 
   - stage: Test 
     pool:
-       vmImage: ubuntu-latest
+      vmImage: ubuntu-latest
     jobs: 
       - job: Mend_Bolt_Dependency_Check
         steps:
@@ -66,6 +66,8 @@ stages:
               ArtifactName: 'Test_results'
               publishLocation: 'Container'
         
+      - job: SonarCloudPrepare          
+        steps:
           - task: SonarCloudPrepare@1
             inputs:
               SonarCloud: 'Sonarcloud_pipeline'
@@ -75,9 +77,11 @@ stages:
               cliProjectKey: 'StagePublic_DevSecOps'
               cliProjectName: 'DevSecOps'
               cliSources: '.'
-        
+      - job: SonarCloudAnalyse     
+        steps:
           - task: SonarCloudAnalyze@1
-        
+      - job: SonarCloudPublish     
+        steps:
           - task: SonarCloudPublish@1
             inputs:
               pollingTimeoutSec: '300'
