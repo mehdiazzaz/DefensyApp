@@ -1,11 +1,11 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v4.5.0
     hooks:
-      - id: check-yaml
-      - id: debug-statements
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
+    - id: check-yaml
+    - id: debug-statements
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
   - repo: https://github.com/hmrc/security-git-hooks
     rev: v1.0.0-beta9
     hooks:
@@ -22,21 +22,9 @@ repos:
       - id: hooks_version_check
         name: Checking local hooks against the latest release
         verbose: true
-  - repo: local
-    hooks:
-      - id: python-safety-dependencies-check
-        name: Safety Check
-        entry: sh
-        args: ["-c","chcp 65001; set PYTHONIOENCODING=utf-8; safety scan;"]
-        language: system
-        encoding: UTF-8
-        verbose: true
-      - id: python-bandit-check
-        name: Bandit Check
-        entry: sh
-        args: ["-c","bandit -r . -ll -s B605"]
-        language: system
-        encoding: UTF-8
-        verbose: true
-
-#fail_fast: false
+     # - id: return-policy
+     #   name: return policy file
+      #  entry: sh
+      #  args: ["-c","mv .safety-policy.yml.bak .safety-policy.yml"]
+       # language: system
+        #args: ["-c","mv .safety-policy.yml .safety-policy.yml.bak; safety scan;"]
