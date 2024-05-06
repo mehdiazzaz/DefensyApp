@@ -181,10 +181,10 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-            docker login  -u baaakkaa --password $(Docker_token)
-            docker build -t baaakkaa/defensylab:latest . ;
-            docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
-            docker push baaakkaa/defensylab:latest;
+           sudo docker login  -u baaakkaa --password $(Docker_token)
+           sudo docker build -t baaakkaa/defensylab:latest . ;
+           sudo docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
+           sudo docker push baaakkaa/defensylab:latest;
   - deployment: DeployWeb
     displayName: deploy Web App
     pool:
