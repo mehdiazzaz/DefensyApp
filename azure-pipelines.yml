@@ -147,7 +147,7 @@ stages:
             -x OWASP-ZAP-Report.xml \
             -r scan-report.html
           
-          true
+
     - task: PublishBuildArtifacts@1
       inputs:
           PathtoPublish: '$(Pipeline.Workspace)'
@@ -193,7 +193,7 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - script: |
-        curl -s https://ci-tools.anchore.io/inline_scan-v0.8.0 | bash -s -- -p
+        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
       displayName: 'Install Anchore CLI'
     - script: |
         docker pull baaakkaa/defensylab:latest
