@@ -195,7 +195,7 @@ stages:
         docker login -u baaakkaa --password $(Docker_token)
       displayName: 'Docker Login'
     - script: |
-        curl -s https://ci-tools.anchore.io/inline_scan-v0.8.0 | bash -s -- -p baaakkaa/defensylab:latest
+        curl -s https://ci-tools.anchore.io/inline_scan-v0.8.0 | bash -s -- -p -r baaakkaa/defensylab:latest
       displayName: 'Install Anchore CLI'
 
     # Publishing Anchore scan results as artifact
