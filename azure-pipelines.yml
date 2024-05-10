@@ -192,18 +192,15 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - script: |
-         curl -s https://ci-tools.anchore.io/inline_scan-v0.8.0 | bash -s -- -p
+        curl -s https://ci-tools.anchore.io/inline_scan-v0.8.0 | bash -s -- -p baaakkaa/defensylab:latest
       displayName: 'Install Anchore CLI'
-    - script: |
-        bash /path/to/anchore_scan.sh -p -r baaakkaa/defensylab:latest
-      displayName: 'Anchore Scan'
 
     # Publishing Anchore scan results as artifact
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Anchore Scan Results'
       inputs:
         PathtoPublish: '$(Pipeline.Workspace)'
-        ArtifactName: 'AnchoreScanResults'
+        ArtifactName: 'Release'
         publishLocation: 'Container'
       condition: always()
 
