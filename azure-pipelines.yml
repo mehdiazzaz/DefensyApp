@@ -192,6 +192,9 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - script: |
+        docker login -u baaakkaa --password $(Docker_token)
+      displayName: 'Docker Login'
+    - script: |
         curl -s https://ci-tools.anchore.io/inline_scan-v0.8.0 | bash -s -- -p baaakkaa/defensylab:latest
       displayName: 'Install Anchore CLI'
 
