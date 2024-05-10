@@ -217,7 +217,7 @@ stages:
     pool:
       vmImage: 'Ubuntu-latest'
     environment: 
-      name: 'Deployment'
+      name: 'Deployement'
       resourceName: Dlab-Intern8
       resourceType: virtualMachine
     strategy:
@@ -235,3 +235,5 @@ stages:
   #      commands: 'docker stop $(docker ps -q --filter ancestor=defensylab_app)'
   #      readyTimeout: '20000'
   #    condition: always()
+  
+
