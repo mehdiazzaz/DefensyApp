@@ -200,13 +200,25 @@ stages:
           steps:
           - script: 
              docker pull baaakkaa/defensylab ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest; 
+- stage: Production
+  jobs:
+    - job: Publish_Docker_Image 
+      steps:
+        - task: Anchore@0
+          inputs:
+            image: 'localbuild/imagename:tag'
+            dockerfile: 'Dockerfile'
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(Pipeline.Workspace)'
+            ArtifactName: 'Release'
+            publishLocation: 'Container'
+          condition: always()
   #  - task: SSH@0
-    #  displayName: Kill_Containers
-    #  inputs:
-      #  sshEndpoint: 'Connection_SSH_Deployement_Manager'
-      #  runOptions: 'commands'
-       # commands: 'docker stop $(docker ps -q --filter ancestor=defensylab_app)'
-       # readyTimeout: '20000'
-      #condition: always()
-      
-  
+  #    displayName: Kill_Containers
+  #    inputs:
+  #      sshEndpoint: 'Connection_SSH_Deployement_Manager'
+  #      runOptions: 'commands'
+  #      commands: 'docker stop $(docker ps -q --filter ancestor=defensylab_app)'
+  #      readyTimeout: '20000'
+  #    condition: always()
