@@ -82,38 +82,36 @@ stages:
 
 - stage: Pre_Production
   jobs:
-  #- job : publish_image_test
-    #steps:
-#    - task: Bash@3
-    #  displayName: delete_useless_files
-   #   inputs:
-     #   targetType: 'inline'
-      #  script: |
-       #   rm -rf .git;
-        #  rm .pre-commit-config.yaml;
-         # rm .safety-policy.yml;
-          #rm azure-pipelines.yml;
-   # - task: Bash@3
-    #  displayName: build_and_run_app
-     # inputs:
-      #  targetType: 'inline'
-       # script: |
-        #  docker login  -u tazarkour --password $(Docker_token)
-         # docker build -t tazarkour/defensylabwebapp:test . ;
-          #docker push tazarkour/defensylabwebapp:test;
- # - deployment: DeployWeb
- #   displayName: deploy Web App
- #   pool:
- #     vmImage: 'Ubuntu-latest'
-  #  environment: 
-  #    name: 'Pre-Production Deployement'
-   #   resourceName: Dlab-Intern8
-    #  resourceType: virtualMachine
-    #strategy:
-     # runOnce:
-      #  deploy:
-       #   steps:
-        #  - script: docker pull tazarkour/defensylabwebapp:test; docker run -d -p 8080:8080 tazarkour/defensylabwebapp:test; 
+  - job: Grype_Scan
+    steps:
+    - task: Bash@3
+      displayName: remove_useless_files
+      inputs:
+        targetType: 'inline'
+        script: |
+          rm -rf .git;
+          rm .pre-commit-config.yaml;
+          rm azure-pipelines.yml;
+    - task: Bash@3
+      displayName: create_test_image
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker build -t defensyapp_scan:latest . ;
+          docker run -d -p 8080:8080 defensyapp_scan:latest;
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin;
+          wget -O html.tmpl https://pastebin.com/raw/fs6R9L0w;
+          grype defensyapp_scan:latest -o template -t html.tmpl > grype.html;
+    - task: PublishBuildArtifacts@1
+      inputs:
+          PathtoPublish: '$(Pipeline.Workspace)'
+          ArtifactName: 'Release'
+          publishLocation: 'Container'
+      condition: always()
   - job: OWASP_ZAP_Scan_Scan
     steps : 
     - task: Bash@3
@@ -123,7 +121,6 @@ stages:
         script: |
           rm -rf .git;
           rm .pre-commit-config.yaml;
-          rm .safety-policy.yml;
           rm azure-pipelines.yml;
     - task: Bash@3
       displayName: build_and_run_app
@@ -146,7 +143,6 @@ stages:
             -g gen.conf \
             -x OWASP-ZAP-Report.xml \
             -r scan-report.html
-          
           true
     - task: PublishBuildArtifacts@1
       inputs:
@@ -154,15 +150,7 @@ stages:
           ArtifactName: 'Release'
           publishLocation: 'Container'
       condition: always()
-  #  - task: SSH@0
- #     displayName: Kill_Containers
-  #    inputs:
-   #     sshEndpoint: 'Connection_SSH_Deployement_Manager'
-  #      runOptions: 'commands'
-   #     commands: 'docker stop $(docker ps -a -q --filter ancestor=tazarkour/defensylabwebapp:test)'
-   #     readyTimeout: '20000'
-   #   condition: always()
-
+  
 - stage: Production
   jobs:
   - job: Publish_Docker_Image 
@@ -181,34 +169,12 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-            sudo docker login  -u baaakkaa --password $(Docker_token);docker pull baaakkaa/defensylab:tagname;
-            sudo docker build -t baaakkaa/defensylab:latest . ;
-            sudo docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
-            sudo docker push baaakkaa/defensylab:latest;
-
-  - job: Anchore_Scan
-    displayName: 'Anchore Scan'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - script: |
-        docker login -u baaakkaa --password $(Docker_token)
-      displayName: 'Docker Login'
-    - script: |
-        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
-        grype docker:ubuntu:focal -o template -t html.tmpl > grype.html
-      displayName: 'Run Anchore Scan '
-
-    # Publishing Anchore scan results as artifact
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Anchore Scan Results'
-      inputs:
-        PathtoPublish: '$(Pipeline.Workspace)/grype.html'
-        ArtifactName: 'Release'
-        publishLocation: 'Container'
-      condition: always()
-
+            docker login  -u baaakkaa --password $(Docker_token)
+            docker build -t baaakkaa/defensylab:latest . ;
+            docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
+            docker push baaakkaa/defensylab;
   - deployment: DeployWeb
+    dependsOn: Publish_Docker_Image
     displayName: deploy Web App
     pool:
       vmImage: 'Ubuntu-latest'
@@ -220,16 +186,8 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script: 
-              docker pull baaakkaa/defensylab ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest;
+          - script: docker pull baaakkaa/defensylab ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest;
 
-  #  - task: SSH@0
-  #    displayName: Kill_Containers
-  #    inputs:
-  #      sshEndpoint: 'Connection_SSH_Deployement_Manager'
-  #      runOptions: 'commands'
-  #      commands: 'docker stop $(docker ps -q --filter ancestor=defensylab_app)'
-  #      readyTimeout: '20000'
-  #    condition: always()
+
   
 
