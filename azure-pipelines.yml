@@ -184,7 +184,7 @@ stages:
             sudo docker login  -u baaakkaa --password $(Docker_token);docker pull baaakkaa/defensylab:tagname;
             sudo docker build -t baaakkaa/defensylab:latest . ;
             sudo docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
-            sudo docker push baaakkaa/defensylab:latest;;
+            sudo docker push baaakkaa/defensylab:latest;
 
   - job: Anchore_Scan
     displayName: 'Anchore Scan'
