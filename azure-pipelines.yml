@@ -179,7 +179,7 @@ stages:
     pool:
       vmImage: 'Ubuntu-latest'
     environment: 
-      name: 'Deployement'
+      name: 'Deployment'
       resourceName: Dlab-Intern8
       resourceType: virtualMachine
     strategy:
