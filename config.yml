@@ -1,0 +1,45 @@
+lang: python
+
+sast:
+  enabled: true
+  delete_files:
+    enabled: false
+    file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
+    directory_list: .git
+  sonar_cloud:
+    enabled: false
+    project_key: my_project_key
+    organization: my_organization
+    token: my_token
+  bandit:
+    enabled: true
+    exclude: tests
+    output_format: json
+    output_file: "$(Build.ArtifactStagingDirectory)/TEST-Bandit.html"  # Ensure proper quoting and variable usage
+  mend_bolt:
+    enabled: false
+    projectName: DefensyApp
+
+dast:
+  enabled: false
+  delete_files:
+    enabled: false
+    file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
+    directory_list: .git
+  grype_scan:
+    enabled: true
+    docker_port: 8080
+    docker_temp_container_name: DefensyApp
+    content_type: html
+  owasp_zap:
+    enabled: true
+    docker_port: 8080
+    docker_temp_container_name: DefensyApp
+
+deployment:
+  enabled: false
+  delete_files:
+    enabled: false
+    file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
+    directory_list: ".git"
+  deployment_type: docker

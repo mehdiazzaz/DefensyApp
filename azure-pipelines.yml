@@ -7,12 +7,119 @@ trigger:
 - master
 pool:
     vmImage: ubuntu-latest
-
+  
 stages:
-- stage: Build_Project
 
+
+- stage: Read_Config_File
   jobs:
+  - job: Parse_file
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: PythonScript@0
+      inputs:
+        scriptSource: 'inline'
+        script: |
+          import yaml
+          import os
+          
+          os.system('ls -l')
 
+          def set_pipeline_variable(name, value):
+              print(f"##vso[task.setvariable variable={name};isOutput=true]{value}")
+          
+          
+          # Read the config.yml file
+          with open("./config.yml", 'r') as file:
+              config = yaml.safe_load(file)
+          
+          # SAST Configuration
+          sast_enabled = str(config.get('sast', {}).get('enabled', False)).lower()
+          set_pipeline_variable('sast_enabled', sast_enabled)
+          
+          if sast_enabled=='true':
+              delete_files = config['sast'].get('delete_files', {})
+              set_pipeline_variable('sast_delete_files_enabled', str(delete_files.get('enabled', False)).lower())
+              set_pipeline_variable('sast_delete_file_list', delete_files.get('file_list', ''))
+              set_pipeline_variable('sast_delete_directory_list', delete_files.get('directory_list', ''))
+          
+              sonar_cloud = config['sast'].get('sonar_cloud', {})
+              set_pipeline_variable('sonar_cloud_enabled', str(sonar_cloud.get('enabled', '')).lower())
+              set_pipeline_variable('sonar_cloud_project_key', sonar_cloud.get('project_key', ''))
+              set_pipeline_variable('sonar_cloud_organization', sonar_cloud.get('organization', ''))
+              set_pipeline_variable('sonar_cloud_token', sonar_cloud.get('token', ''))
+          
+              bandit = config['sast'].get('bandit', {})
+              set_pipeline_variable('bandit_enabled', str(bandit.get('enabled', False)).lower())
+              set_pipeline_variable('bandit_exclude', bandit.get('exclude', ''))
+              set_pipeline_variable('bandit_output_format', bandit.get('output_format', ''))
+              set_pipeline_variable('bandit_output_file', bandit.get('output_file', ''))
+          
+              mend_bolt = config['sast'].get('mend_bolt', {})
+              set_pipeline_variable('mend_bolt_projectName', mend_bolt.get('projectName', ''))
+              set_pipeline_variable('mend_bolt_enabled', str(mend_bolt.get('enabled', False)).lower())
+          
+          # DAST Configuration
+          dast_enabled = str(config.get('dast', {}).get('enabled', False)).lower()
+          set_pipeline_variable('dast_enabled', dast_enabled)
+          
+          if dast_enabled=='true':
+              delete_files = config['dast'].get('delete_files', {})
+              set_pipeline_variable('dast_delete_files_enabled', str(delete_files.get('enabled', False)))
+              set_pipeline_variable('dast_delete_file_list', delete_files.get('file_list', ''))
+              set_pipeline_variable('dast_delete_directory_list', delete_files.get('directory_list', ''))
+          
+              grype_scan = config['dast'].get('grype_scan', {})
+              set_pipeline_variable('grype_scan_enabled', str(grype_scan.get('enabled', False)).lower())
+              set_pipeline_variable('grype_scan_docker_port', grype_scan.get('docker_port', ''))
+              set_pipeline_variable('grype_scan_docker_temp_container_name', grype_scan.get('docker_temp_container_name', ''))
+              set_pipeline_variable('grype_scan_content_type', grype_scan.get('content_type', ''))
+          
+              owasp_zap = config['dast'].get('owasp_zap', {})
+              set_pipeline_variable('owasp_zap_enabled', str(owasp_zap.get('enabled', False)).lower())
+              set_pipeline_variable('owasp_zap_docker_port', owasp_zap.get('docker_port', ''))
+              set_pipeline_variable('owasp_zap_docker_temp_container_name', owasp_zap.get('docker_temp_container_name', ''))
+          
+          # Deployment Configuration
+          deployment_enabled = str(config.get('deployment', {}).get('enabled', False)).lower()
+          set_pipeline_variable('deployment_enabled', deployment_enabled)
+          
+          if deployment_enabled=='true':
+              delete_files = config['deployment'].get('delete_files', {})
+              set_pipeline_variable('deployment_delete_files_enabled', str(delete_files.get('enabled', False)).lower())
+              set_pipeline_variable('deployment_delete_file_list', delete_files.get('file_list', ''))
+              set_pipeline_variable('deployment_delete_directory_list', delete_files.get('directory_list', ''))
+              set_pipeline_variable('deployment_type', config['deployment'].get('deployement_type', ''))
+      displayName: 'Set variables from config.yml'
+      
+    - script: |
+        echo "SAST is enabled: $(sast_enabled)"
+        echo "SonarCloud enabled: $(sonar_cloud_enabled)"
+        echo "SonarCloud project key: $(sonar_cloud_project_key)"
+        echo "SonarCloud organization: $(sonar_cloud_organization)"
+        echo "SonarCloud token: $(sonar_cloud_token)"
+        echo "Bandit enabled: $(bandit_enabled)"
+        echo "Bandit exclude: $(bandit_exclude)"
+        echo "Bandit output format: $(bandit_output_format)"
+        echo "Bandit output file: $(bandit_output_file)"
+        echo "Mend Bolt enabled: $(mend_bolt_enabled)"
+        echo "Mend Bolt project name: $(mend_bolt_projectName)"
+        echo "DAST is enabled: $(dast_enabled)"
+        echo "Grype scan enabled: $(grype_scan_enabled)"
+        echo "Grype scan docker port: $(grype_scan_docker_port)"
+        echo "Grype scan docker temp container name: $(grype_scan_docker_temp_container_name)"
+        echo "Grype scan content type: $(grype_scan_content_type)"
+        echo "OWASP ZAP enabled: $(owasp_zap_enabled)"
+        echo "OWASP ZAP docker port: $(owasp_zap_docker_port)"
+        echo "OWASP ZAP docker temp container name: $(owasp_zap_docker_temp_container_name)"
+        echo "Deployment is enabled: $(deployment_enabled)"
+        echo "Deployment type: $(deployment_type)"
+      displayName: 'Print variables'
+- stage: Build_Project
+  dependsOn: Read_Config_File
+  jobs:
+    
     - job: run_build
       pool:
         vmImage: ubuntu-latest
@@ -42,17 +149,58 @@ stages:
           pip install -r requirements.txt
           pip install unittest-xml-reporting
         displayName: 'Install prerequisites'
-- stage: Test
+- stage: SAST
+  dependsOn: 
+    - Read_Config_File
+    - Build_Project
+  variables:
+    sast_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.sast_enabled'] ]
+    sonar_cloud_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.sonar_cloud_enabled'] ]
+    sonar_cloud_project_key: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.sonar_cloud_project_key'] ]
+    sonar_cloud_organization: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.sonar_cloud_organization'] ]
+    bandit_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.bandit_enabled'] ]
+    bandit_exclude: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.bandit_exclude'] ]
+    bandit_output_format: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.bandit_output_format'] ]
+    bandit_output_file: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.bandit_output_file'] ]
+    mend_bolt_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.mend_bolt_enabled'] ]
+    mend_bolt_projectName: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.mend_bolt_projectName'] ]
   pool:
     vmImage: ubuntu-latest
   jobs:
+    - job: test
+      steps:
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: 'echo "$(sast_enabled) $(sonar_cloud_enabled) $(bandit_enabled) $(mend_bolt_enabled)"'
+    - job: SonarCloud
+      condition: eq(variables.sonar_cloud_enabled,  'true')
+      steps:
+      - task: SonarCloudPrepare@1
+        inputs:
+          SonarCloud: 'SonarCloud_Connection'
+          organization: 'projet-pfe-2024-devsecops'
+          scannerMode: 'CLI'
+          configMode: 'manual'
+          cliProjectKey: 'projet-pfe-2024-devsecops'
+          cliProjectName: 'DevSecOps-PFE'
+          cliSources: '.'
+      - task: SonarCloudAnalyze@1
+        inputs:
+          jdkversion: 'JAVA_HOME_17_X64'
+      - task: SonarCloudPublish@1
+        inputs:
+          pollingTimeoutSec: '300'
+  
     - job: Mend_Bolt_Dependency_Check
+      condition: eq(variables.mend_bolt_enabled,  'true')
       steps:
       - task: WhiteSource@21
         inputs:
           cwd: '$(System.DefaultWorkingDirectory)'
           projectName: 'DefensyApp'
     - job: Bandit_Check
+      condition: eq(variables.bandit_enabled,  'true')
       steps:
       - script: |
           pip install bandit 
@@ -64,25 +212,19 @@ stages:
             PathtoPublish: '$(Build.ArtifactStagingDirectory)/TEST-Bandit.html'
             ArtifactName: 'Test_results'
             publishLocation: 'Container'
-    - job: SonarCloudPrepare          
-      steps:
-        - task: SonarCloudPrepare@1
-          inputs:
-            SonarCloud: 'Sonarcloud_pipeline'
-            organization: 'sonarcloud-stagepublic'
-            scannerMode: 'CLI'
-            configMode: 'manual'
-            cliProjectKey: 'StagePublic_DevSecOps'
-            cliProjectName: 'DevSecOps'
-            cliSources: '.'
-        - task: SonarCloudAnalyze@1
-        - task: SonarCloudPublish@1
-          inputs:
-            pollingTimeoutSec: '300'
-
-- stage: Pre_Production
+  
+    
+- stage: DAST
+  variables:
+    dast_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.dast_enabled'] ]
+    grype_scan_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.grype_scan_enabled'] ]
+    owasp_zap_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.owasp_zap_enabled'] ]
+  dependsOn: 
+    - Read_Config_File
+    - SAST
   jobs:
   - job: Grype_Scan
+    condition: eq(variables.grype_scan_enabled,  'true')
     steps:
     - task: Bash@3
       displayName: remove_useless_files
@@ -112,7 +254,17 @@ stages:
           ArtifactName: 'Release'
           publishLocation: 'Container'
       condition: always()
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'grype.html'
+        artifactName: 'GrypeReport'
+      displayName: 'Publish Grype Report'
+    - task: PublishCodeCoverageResults@2
+      inputs:
+        summaryFileLocation: '$(Build.ArtifactStagingDirectory)/grype.html'
+   
   - job: OWASP_ZAP_Scan_Scan
+    condition: eq(variables.owasp_zap_enabled,  'true')
     steps : 
     - task: Bash@3
       displayName: remove_useless_files
@@ -152,6 +304,12 @@ stages:
       condition: always()
   
 - stage: Production
+  dependsOn: 
+    - Read_Config_File
+    - DAST
+  variables:
+    deployment_enabled: $[ stageDependencies.Read_Config_File.Parse_file.outputs['PythonScript.deployment_enabled'] ]
+  #condition: eq(variables.deployment_enabled,  'true')
   jobs:
   - job: Publish_Docker_Image 
     steps:
@@ -169,25 +327,26 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-            docker login  -u baaakkaa --password $(Docker_token)
-            docker build -t baaakkaa/defensylab:latest . ;
-            docker tag baaakkaa/defensylab:latest baaakkaa/defensylab:latest;
-            docker push baaakkaa/defensylab;
+            docker login  -u $(docker_username) --password $(Docker_token)
+            docker build -t $(docker_registry)/$(docker_image):$(docker_image_tag) . ;
+            docker tag $(docker_registry)/$(docker_image):$(docker_image_tag) $(docker_registry)/$(docker_image):$(docker_image_tag);
+            docker push $(docker_registry)/$(docker_image):$(docker_image_tag);
+  
   - deployment: DeployWeb
     dependsOn: Publish_Docker_Image
     displayName: deploy Web App
     pool:
       vmImage: 'Ubuntu-latest'
     environment: 
-      name: 'Deployment'
+      name: 'Deployement'
       resourceName: Dlab-Intern8
       resourceType: virtualMachine
     strategy:
       runOnce:
         deploy:
           steps:
-          - script: docker pull baaakkaa/defensylab ; docker run -d -p 8080:8080 baaakkaa/defensylab:latest;
-
-
+          - script: |
+              docker pull $(docker_registry)/$(docker_image):$(docker_image_tag)
+              docker run -d -p 8080:8080 $(docker_registry)/$(docker_image):$(docker_image_tag)
+            condition: eq(variables['deployment_enabled'], 'docker')
   
-
