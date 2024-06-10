@@ -3,14 +3,14 @@ lang: python
 sast:
   enabled: true
   delete_files:
-    enabled: false
+    enabled: true
     file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
     directory_list: .git
   sonar_cloud:
-    enabled: false
-    project_key: my_project_key
-    organization: my_organization
-    token: my_token
+    enabled: true
+    project_key: projet-pfe-2024-devsecops
+    organization: projet-pfe-2024-devsecops
+    token: Sonarcloud_pipeline
   bandit:
     enabled: true
     exclude: tests
@@ -21,7 +21,7 @@ sast:
     projectName: DefensyApp
 
 dast:
-  enabled: false
+  enabled: true
   delete_files:
     enabled: false
     file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
@@ -37,9 +37,9 @@ dast:
     docker_temp_container_name: DefensyApp
 
 deployment:
-  enabled: false
+  enabled: true
   delete_files:
-    enabled: false
+    enabled: true
     file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
     directory_list: ".git"
   deployment_type: docker
