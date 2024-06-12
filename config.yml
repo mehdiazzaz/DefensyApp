@@ -7,7 +7,7 @@ sast:
     file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
     directory_list: .git
   sonar_cloud:
-    enabled: true
+    enabled: false
     project_key: devsecops-pfe
     organization: devsecops-pfe
     token: Sonarcloud_pipeline
