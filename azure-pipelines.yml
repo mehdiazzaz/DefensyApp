@@ -178,11 +178,11 @@ stages:
       steps:
       - task: SonarCloudPrepare@1
         inputs:
-          SonarCloud: 'SonarCloud_Connection'
-          organization: 'projet-pfe-2024-devsecops'
+          SonarCloud: 'Sonarcloud_pipeline'
+          organization: 'devsecops-pfe'
           scannerMode: 'CLI'
           configMode: 'manual'
-          cliProjectKey: 'projet-pfe-2024-devsecops'
+          cliProjectKey: 'devsecops-pfe'
           cliProjectName: 'DevSecOps-PFE'
           cliSources: '.'
       - task: SonarCloudAnalyze@1
@@ -338,7 +338,7 @@ stages:
     pool:
       vmImage: 'Ubuntu-latest'
     environment: 
-      name: 'Deployement'
+      name: 'Deployment'
       resourceName: Dlab-Intern8
       resourceType: virtualMachine
     strategy:
@@ -349,4 +349,3 @@ stages:
               docker pull $(docker_registry)/$(docker_image):$(docker_image_tag)
               docker run -d -p 8080:8080 $(docker_registry)/$(docker_image):$(docker_image_tag)
             condition: eq(variables['deployment_enabled'], 'docker')
-  
