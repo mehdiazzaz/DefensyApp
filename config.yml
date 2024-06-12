@@ -7,7 +7,7 @@ sast:
     file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
     directory_list: .git
   sonar_cloud:
-    enabled: true
+    enabled: false
     project_key: projet-pfe-2024-devsecops
     organization: projet-pfe-2024-devsecops
     token: Sonarcloud_pipeline
@@ -17,13 +17,13 @@ sast:
     output_format: json
     output_file: "$(Build.ArtifactStagingDirectory)/TEST-Bandit.html"  # Ensure proper quoting and variable usage
   mend_bolt:
-    enabled: false
+    enabled: true
     projectName: DefensyApp
 
 dast:
   enabled: true
   delete_files:
-    enabled: false
+    enabled: true
     file_list: ".pre-commit-config.yaml, azure-pipelines.yml"  # Ensure proper quoting if needed
     directory_list: .git
   grype_scan:
