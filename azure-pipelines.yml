@@ -178,11 +178,11 @@ stages:
       steps:
       - task: SonarCloudPrepare@1
         inputs:
-          SonarCloud: 'SonarCloud_Connection'
-          organization: 'projet-pfe-2024-devsecops'
+          SonarCloud: 'Sonarcloud_pipeline'
+          organization: 'devsecops-pfe'
           scannerMode: 'CLI'
           configMode: 'manual'
-          cliProjectKey: 'projet-pfe-2024-devsecops'
+          cliProjectKey: 'devsecops-pfe'
           cliProjectName: 'DevSecOps-PFE'
           cliSources: '.'
       - task: SonarCloudAnalyze@1
